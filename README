@@ -1,0 +1,36 @@
+marad - an Autumn 2022 Lisp Game Jam game
+
+
+INSTALLATION
+
+On OpenBSD, installation might run along the lines of:
+
+  # required system packages (may be incomplete)
+  doas pkg_add gnupg sbcl sdl2
+
+  # if one has not setup quicklisp somewhere ...
+  ftp https://beta.quicklisp.org/quicklisp.lisp
+  ftp https://beta.quicklisp.org/quicklisp.lisp.asc
+  gpg --recv-keys 307965AB028B5FF7
+  gpg --verify quicklisp.lisp.asc
+  sbcl --eval '(load "quicklisp.lisp")' \
+       --eval '(quicklisp-quickstart:install)' \
+       --eval '(quit)'
+
+  # ... install marad into the local quicklisp
+  cd ~/quicklisp/local-projects
+  git clone https://thrig.me/src/marad.git
+  cd marad
+  TODO
+
+Note that SBCL uses W^X memory options, so /usr/local must be mounted
+wxallowed, which probably is the default under OpenBSD 7.2. This can be
+checked by running something like:
+
+  $ fgrep /usr/local /etc/fstab
+  38fcd6f796507fa1.h /usr/local ffs rw,wxallowed,nodev,noatime 1 2
+
+
+SOURCES
+
+TODO
