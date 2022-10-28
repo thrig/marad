@@ -1,4 +1,10 @@
+build:
+	@./compile
+
 clean:
 	@-rm marad *.core 2>/dev/null
 
-.PHONY: clean
+run:
+	@./run
+
+.PHONY: build clean run

@@ -1,5 +1,12 @@
 (in-package :marad)
 
+; DBG turn off RNG randomization for now...
+;(block nil (setq *random-state* (make-random-state t)) (return))
+
+(defun rclear (renderer)
+  (sdl2:set-render-draw-color renderer 0 0 0 255)
+  (sdl2:render-clear renderer))
+
 (defun main ()
   (sdl2:with-init
     (:everything)

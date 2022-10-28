@@ -1,5 +1,5 @@
 (asdf:defsystem
-  #:lacrida
+  #:marad
   :description "an Autumn 2022 Lisp Game Jam game"
   :author "Jeremy Mates <jeremy.mates@gmail.com>"
   :license "BSD"
