@@ -5,35 +5,32 @@ INSTALLATION
 
 On OpenBSD, installation might run along the lines of:
 
-  # required system packages (may be incomplete)
-  doas pkg_add gnupg sbcl sdl2
+	# required system packages (may be incomplete)
+	doas pkg_add gnupg sbcl sdl2
 
-  # if one has not setup quicklisp somewhere ...
-  ftp https://beta.quicklisp.org/quicklisp.lisp
-  ftp https://beta.quicklisp.org/quicklisp.lisp.asc
-  gpg --recv-keys 307965AB028B5FF7
-  gpg --verify quicklisp.lisp.asc
-  sbcl --eval '(load "quicklisp.lisp")' \
-       --eval '(quicklisp-quickstart:install)' \
-       --eval '(quit)'
+	# if one has not setup quicklisp ...
+	ftp https://beta.quicklisp.org/quicklisp.lisp
+	ftp https://beta.quicklisp.org/quicklisp.lisp.asc
+	gpg --recv-keys 307965AB028B5FF7
+	gpg --verify quicklisp.lisp.asc
+	sbcl --eval '(load "quicklisp.lisp")' \
+	     --eval '(quicklisp-quickstart:install)' \
+	     --eval '(quit)'
 
-  # ... install marad into the local quicklisp
-  cd ~/quicklisp/local-projects
-  git clone https://thrig.me/src/marad.git
-  cd marad
-  TODO
+	# ... install marad into the local quicklisp
+	cd ~/quicklisp/local-projects
+	git clone https://thrig.me/src/marad.git
+	cd marad
+	make run
 
-Note that SBCL uses W^X memory options, so /usr/local must be mounted
+Note that SBCL uses W^X memory operations, so /usr/local must be mounted
 wxallowed, which probably is the default under OpenBSD 7.2. This can be
 checked by running something like:
 
-  $ fgrep /usr/local /etc/fstab
-  38fcd6f796507fa1.h /usr/local ffs rw,wxallowed,nodev,noatime 1 2
+	$ fgrep /usr/local /etc/fstab | fgrep wxallowed || echo not ok
+	38fcd6f796507fa1.h /usr/local ffs rw,wxallowed,nodev,noatime 1 2
 
-
-SOURCES
-
-TODO
+Portability beyond SBCL and OpenBSD has not been tested.
 
 
 COPYRIGHT

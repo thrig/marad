@@ -1,2 +1,1 @@
-(defpackage #:marad
-  (:use #:cl #:alexandria #:sdl2))
+(defpackage :marad (:use :cl :alexandria :sdl2))
