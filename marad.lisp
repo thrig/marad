@@ -4,6 +4,8 @@
 ;   between Babylon and Isin. The city's main temple, a ziggurat, is
 ;   E-igi-kalama (House which is the eye of the land)"
 ;     -- https://en.wikipedia.org/wiki/Marad
+;
+; ... but I cannot think of any game to make from it! oh well
 
 (in-package :marad)
 
@@ -17,9 +19,9 @@
 (defconstant +offset-x+ (/ +border-x+ 2))
 (defconstant +offset-y+ (/ +border-y+ 2))
 
-(defconstant +node-count+ 20)
+(defconstant +node-count+ 128)
 
-(defconstant +sdl-delay+ 100)   ; do not burn up the CPU too much
+(defconstant +sdl-delay+ 128)   ; do not burn up the CPU too much
 
 (defun rclear (renderer)
   (sdl2:set-render-draw-color renderer 192 192 192 255) ; bg color
@@ -82,15 +84,21 @@
     (:method :poll)
     (:keyup
       (:keysym keysym)
-      (let ((scc (sdl2:scancode-value keysym))
-            ; (sym (sdl2:sym-value keysym))
-            ; (mod-value (sdl2:mod-value keysym))
-            )
+      (let ((scancode (sdl2:scancode-value keysym))
+            (sym (sdl2:sym-value keysym))
+            (mod-value (sdl2:mod-value keysym)))
         (cond
-          ((sdl2:scancode= scc :scancode-q) (sdl2:push-event :quit))
-          )))
-    (:idle () (update renderer graph) (sdl2:delay +sdl-delay+))
-    (:quit () t)))
+          ((sdl2:scancode= scancode :scancode-q) (sdl2:push-event :quit)))
+        (format t "Key sym: ~a, code: ~a, mod: ~a~%" sym scancode mod-value)))
+    (:mousemotion
+      (:x x :y y :xrel xrel :yrel yrel :state state)
+      ; TODO if this is "close enough" to a node light the node up?
+      ;(format t "Mouse motion abs(rel): ~a,~a (~a,~a) state ~a~%" x y xrel yrel state))
+      (:mousebuttondown
+        (:x x :y y :button button)
+        (format t "CLICK ~a,~a (~a)~&" x y button))
+      (:idle () (update renderer graph) (sdl2:delay +sdl-delay+))
+      (:quit () t)))
 
 (defun main (&aux (graph (new-graph (- +game-width+ +border-x+)
                                     (- +game-height+ +border-y+)
@@ -104,8 +112,7 @@
       (sdl2:with-renderer
         (renderer win :flags '(:accelerated))
         (update renderer graph)
-        (event-loop renderer graph)
-        ))))
+        (event-loop renderer graph)))))
 
 ; NOTE some implementations on some OS require that SLD2 be run from the
 ; main thread, hence the make-this-thread-main thing. if that causes a
