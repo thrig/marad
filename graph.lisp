@@ -15,8 +15,8 @@
 
 ; a node in the network
 ;
-; NOTE the custom print function avoids infinite loops when printing the
-; entire graph (changing *print-circle* does not help)
+; NOTE the custom print function avoids infinite loops when printing
+; (changing *print-circle* does not help)
 (defstruct (snode (:print-function print-snode))
   (xx 0 :type fixnum)
   (yy 0 :type fixnum)
