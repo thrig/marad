@@ -116,13 +116,10 @@
                        size size)))))
 
 (defun update-board (renderer app)
-  ; TODO a slightly transparent board might be nice? these are somewhat
-  ; not documented
+  ; NOTE how to use blend is somewhat not documented
   ;   https://github.com/lispgames/cl-sdl2/issues/153
-  ; and anyways cause LISP to blow up with "SDL Error (1): Invalid texture"
-  ;(sdl2:set-render-draw-blend-mode renderer sdl2-ffi:+sdl-blendmode-blend+)
-  ;(sdl2:set-texture-blend-mode renderer sdl2-ffi:+sdl-blendmode-blend+)
-  (sdl2:set-render-draw-color renderer 255 255 255 127) ; board skari
+  (sdl2:set-render-draw-blend-mode renderer sdl2-ffi:+sdl-blendmode-blend+)
+  (sdl2:set-render-draw-color renderer 255 255 255 240) ; board skari
   (let ((*offset-x* (+ +border-offx+ (app-cellxoff app)))
         (*offset-y* (+ +border-offy+ (app-cellyoff app)))
         (boardsize (app-cellwidth app))
