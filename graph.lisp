@@ -72,6 +72,13 @@
     (setf (snode-next node1) link-to)
     (push node1 (nodeset-network ndset))))
 
+; linear limit of inputs along the axis x1..x2 to the range y1..y2
+(defun new-clamped-slope (x1 y1 x2 y2)
+  (let* ((m (/ (- y2 y1) (- x2 x1))) (b (- y1 (* m x1))))
+    (lambda (x)
+      (let ((y (+ (* m x) b)))
+        (if (> y y2) y2 (if (< y y1) y1 y))))))
+
 (defun new-graph (width height node-count &aux (nset (make-nodeset)))
   (with-random-points
     (width height node-count x y)

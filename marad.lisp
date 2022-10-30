@@ -9,12 +9,20 @@
 
 (block nil (setq *random-state* (make-random-state t)) (return))
 
-; TODO probably can ask SDL what the screen size is and then ...
+; TODO ask SDL what the screen size is and then derive a bunch of the
+; following constants from that
 (defconstant +game-width+ 1280)
 (defconstant +game-height+ 800)
 
-;(defconstant +border-x+ 128)
-;(defconstant +border-y+ 80)
+; for a NxN board
+(defconstant +board-cells+ 9)
+; don't let the board take up all the window (TODO probably the board
+; needs a border drawn around it)
+(defconstant +border-x+ 64)
+(defconstant +border-y+ 40)
+(defconstant +border-offx+ (/ +border-x+ 2))
+(defconstant +border-offy+ (/ +border-y+ 2))
+(defconstant +board-line-width+ 2)
 
 ; the graph (background art) extends a bit beyond the window boundaries
 (defconstant +graph-more+ 128)
@@ -37,6 +45,10 @@
   rend      ; SDL renderer
   graph     ; background graph art thing
   slope     ; a slope function for the graph
+  cellwidth ; how big the board is
+  cellsize  ; how big a board cell is
+  cellxoff  ; where to start drawing the board from
+  cellyoff
   )
 
 (defun draw-line (renderer x1 y1 x2 y2)
@@ -67,7 +79,7 @@
           (draw-line renderer (+ x1 w) y1 (+ x1 w) y2))))
 
 ; diagonal lines are problematic lacking SDL GFX so instead we use
-(defun squareline (renderer width x1 y1 x2 y2 &aux (mulx 1) (muly 1))
+(defun square-line (renderer width x1 y1 x2 y2 &aux (mulx 1) (muly 1))
   (when (> x1 x2) (setf mulx -1))
   (when (> y1 y2) (setf muly -1))
   (loop until (and (= x1 x2) (= y1 y2)) do
@@ -80,20 +92,22 @@
               (line-vert renderer width x1 y1 dy)
               (incf y1 dy))))))
 
-; linear limit of inputs along the axis x1..x2 to the range y1..y2
-(defun new-clamped-slope (x1 y1 x2 y2)
-  (let* ((m (/ (- y2 y1) (- x2 x1))) (b (- y1 (* m x1))))
-    (lambda (x)
-      (let ((y (+ (* m x) b)))
-        (if (> y y2) y2 (if (< y y1) y1 y))))))
+; how big are the cells? and also the x,y offsets for the origin
+(defun square-size (width height cell-count)
+  (let* ((cell-size (truncate (/ (min width height) cell-count)))
+         (total-cell-size (* cell-size cell-count)))
+    (values total-cell-size
+            cell-size
+            (truncate (/ (- width total-cell-size) 2))
+            (truncate (/ (- height total-cell-size) 2)))))
 
 (defun update-graph (renderer app)
-  (sdl2:set-render-draw-color renderer 0 0 0 255) ; graph skari
+  (sdl2:set-render-draw-color renderer 192 192 192 255) ; graph node skari
   (let ((*offset-x* +graph-less+) (*offset-y* +graph-less+)
         (graph (app-graph app)) (slopefn (app-slope app)))
     (loop for n in (nodeset-network graph) do
           (when-let (m (snode-next n))
-            (squareline renderer +graph-line-width+
+            (square-line renderer +graph-line-width+
                         (snode-xx n) (snode-yy n)
                         (snode-xx m) (snode-yy m)))
           (let ((size (round (funcall slopefn (snode-population n)))))
@@ -101,11 +115,33 @@
                        (- (snode-xx n) 0) (- (snode-yy n) 0)
                        size size)))))
 
+(defun update-board (renderer app)
+  ; TODO a slightly transparent board might be nice? these are somewhat
+  ; not documented
+  ;   https://github.com/lispgames/cl-sdl2/issues/153
+  ; and anyways cause LISP to blow up with "SDL Error (1): Invalid texture"
+  ;(sdl2:set-render-draw-blend-mode renderer sdl2-ffi:+sdl-blendmode-blend+)
+  ;(sdl2:set-texture-blend-mode renderer sdl2-ffi:+sdl-blendmode-blend+)
+  (sdl2:set-render-draw-color renderer 255 255 255 127) ; board skari
+  (let ((*offset-x* (+ +border-offx+ (app-cellxoff app)))
+        (*offset-y* (+ +border-offy+ (app-cellyoff app)))
+        (boardsize (app-cellwidth app))
+        (cellsize (app-cellsize app))
+        )
+    (fill-rect renderer 0 0 boardsize boardsize)
+    (sdl2:set-render-draw-color renderer 0 0 0 255) ; board line skari
+    (loop for x from 0 by cellsize for y from 0 by cellsize
+          repeat (1+ +board-cells+) do
+          (line-hori renderer +board-line-width+ 0 y boardsize)
+          (line-vert renderer +board-line-width+ x 0 boardsize))
+    ))
+
 (defun update (app)
   (let ((renderer (app-rend app)))
-    (sdl2:set-render-draw-color renderer 192 192 192 255) ; bg skari
+    (sdl2:set-render-draw-color renderer 64 64 64 255) ; background skari
     (sdl2:render-clear renderer)
     (update-graph renderer app)
+    (update-board renderer app)
     (sdl2:render-present renderer)))
 
 (defun eventually (app)
@@ -137,6 +173,14 @@
           (app-slope app) (new-clamped-slope
                             (nodeset-pop-min graph) +node-min-size+
                             (nodeset-pop-max graph) +node-max-size+)))
+  (multiple-value-bind (total size xoff yoff)
+                       (square-size (- +game-width+ +border-x+)
+                                    (- +game-height+ +border-y+)
+                                    +board-cells+)
+    (setf (app-cellwidth app) total
+          (app-cellsize app) size
+          (app-cellxoff app) xoff
+          (app-cellyoff app) yoff))
   app)
 
 (defun main (&aux (app (world)))
