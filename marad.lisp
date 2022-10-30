@@ -127,9 +127,8 @@
         )
     (fill-rect renderer 0 0 boardsize boardsize)
     (sdl2:set-render-draw-color renderer 0 0 0 255) ; board line skari
-    (loop for x from 0 by cellsize for y from 0 by cellsize
-          repeat (1+ +board-cells+) do
-          (line-hori renderer +board-line-width+ 0 y boardsize)
+    (loop for x from 0 by cellsize repeat (1+ +board-cells+) do
+          (line-hori renderer +board-line-width+ 0 x boardsize)
           (line-vert renderer +board-line-width+ x 0 boardsize))
     ))
 
