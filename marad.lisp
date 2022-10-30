@@ -16,8 +16,10 @@
 
 (defconstant +border-x+ 128)
 (defconstant +border-y+ 80)
-(defconstant +offset-x+ (/ +border-x+ 2))
-(defconstant +offset-y+ (/ +border-y+ 2))
+;(defconstant +offset-x+ (/ +border-x+ 2))
+;(defconstant +offset-y+ (/ +border-y+ 2))
+(defconstant +offset-x+ -32)
+(defconstant +offset-y+ -32)
 
 (defconstant +node-count+ 128)
 
@@ -69,17 +71,25 @@
               (line-vert renderer width x1 y1 dy)
               (incf y1 dy))))))
 
-(defun update (renderer graph)
-  ;(format t "~&-- update")
+(defun make-clamped-slope (x1 y1 x2 y2)
+  (let* ((m (/ (- y2 y1) (- x2 x1))) (b (- y1 (* m x1))))
+    (lambda (x)
+      (let ((y (+ (* m x) b)))
+        (if (> y y2) y2 (if (< y y1) y1 y))))))
+
+(defun update (renderer graph slopefn)
   (rclear renderer)
   (sdl2:set-render-draw-color renderer 0 0 0 255)
   (loop for n in (nodeset-network graph) do
         (when-let (m (snode-next n))
-          (squareline renderer 5 (snode-xx n) (snode-yy n) (snode-xx m) (snode-yy m)))
-        (fill-rect renderer (- (snode-xx n) 0) (- (snode-yy n) 0) 15 15))
+          (squareline renderer 4 (snode-xx n) (snode-yy n) (snode-xx m) (snode-yy m)))
+        (let ((size (round (funcall slopefn (snode-population n)))))
+          (fill-rect renderer
+                     (- (snode-xx n) 0) (- (snode-yy n) 0)
+                     size size)))
   (sdl2:render-present renderer))
 
-(defun event-loop (renderer graph)
+(defun event-loop (renderer graph slopefn)
   (sdl2:with-event-loop
     (:method :poll)
     (:keyup
@@ -92,27 +102,29 @@
         (format t "Key sym: ~a, code: ~a, mod: ~a~%" sym scancode mod-value)))
     (:mousemotion
       (:x x :y y :xrel xrel :yrel yrel :state state)
-      ; TODO if this is "close enough" to a node light the node up?
-      ;(format t "Mouse motion abs(rel): ~a,~a (~a,~a) state ~a~%" x y xrel yrel state))
-      (:mousebuttondown
-        (:x x :y y :button button)
-        (format t "CLICK ~a,~a (~a)~&" x y button))
-      (:idle () (update renderer graph) (sdl2:delay +sdl-delay+))
-      (:quit () t)))
+      )
+    (:mousebuttondown
+      (:x x :y y :button button)
+      (format t "CLICK ~a,~a (~a)~&" x y button))
+    (:idle () (update renderer graph slopefn) (sdl2:delay +sdl-delay+))
+    (:quit () t)))
 
-(defun main (&aux (graph (new-graph (- +game-width+ +border-x+)
-                                    (- +game-height+ +border-y+)
-                                    +node-count+)))
-  (sdl2:with-init
-    (:everything)
-    (sdl2:with-window
-      (win :title "Marad" :w +game-width+ :h +game-height+ :flags '(:shown))
-      ; really bad with CWM, messes up the usual four terminals on exit
-      ;(sdl2:set-window-fullscreen win t)
-      (sdl2:with-renderer
-        (renderer win :flags '(:accelerated))
-        (update renderer graph)
-        (event-loop renderer graph)))))
+(defun main ()
+  (let* ((graph (new-graph (+ +game-width+ (* 1.2 +border-x+))
+                           (+ +game-height+ (* 1.2 +border-y+))
+                           +node-count+))
+         (slopefn (make-clamped-slope (nodeset-pop-min graph) 11
+                                      (nodeset-pop-max graph) 83)))
+    (sdl2:with-init
+      (:everything)
+      (sdl2:with-window
+        (win :title "Marad" :w +game-width+ :h +game-height+ :flags '(:shown))
+        ; really bad with CWM, messes up the usual four terminals on exit
+        ;(sdl2:set-window-fullscreen win t)
+        (sdl2:with-renderer
+          (renderer win :flags '(:accelerated))
+          (update renderer graph slopefn)
+          (event-loop renderer graph slopefn))))))
 
 ; NOTE some implementations on some OS require that SLD2 be run from the
 ; main thread, hence the make-this-thread-main thing. if that causes a
