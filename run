@@ -9,5 +9,7 @@ eval 'exec sbcl --script "$0" ${1+"$@"}'
     (load quicklisp-init)))
 (ql:quickload :marad :silent t)
 
+(proclaim '(optimize (debug 3)))
+
 (in-package :marad)
 (_start)
