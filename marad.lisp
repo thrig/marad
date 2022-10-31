@@ -16,6 +16,7 @@
 
 ; for a NxN board
 (defconstant +board-cells+ 9)
+(defconstant +middle-cell+ 4)
 ; don't let the board take up all the window (TODO probably the board
 ; needs a border drawn around it)
 (defconstant +border-x+ 64)
@@ -120,13 +121,16 @@
   ;   https://github.com/lispgames/cl-sdl2/issues/153
   (sdl2:set-render-draw-blend-mode renderer sdl2-ffi:+sdl-blendmode-blend+)
   (sdl2:set-render-draw-color renderer 255 255 255 240) ; board skari
-  (let ((*offset-x* (+ +border-offx+ (app-cellxoff app)))
-        (*offset-y* (+ +border-offy+ (app-cellyoff app)))
-        (boardsize (app-cellwidth app))
-        (cellsize (app-cellsize app))
-        )
+  (let* ((*offset-x* (+ +border-offx+ (app-cellxoff app)))
+         (*offset-y* (+ +border-offy+ (app-cellyoff app)))
+         (boardsize (app-cellwidth app))
+         (cellsize (app-cellsize app))
+         (middle (* cellsize +middle-cell+))
+         )
     (fill-rect renderer 0 0 boardsize boardsize)
-    (sdl2:set-render-draw-color renderer 0 0 0 255) ; board line skari
+    (sdl2:set-render-draw-color renderer 208 208 208 128) ; center cell skari
+    (fill-rect renderer middle middle cellsize cellsize)
+    (sdl2:set-render-draw-color renderer 32 32 32 240) ; board line skari
     (loop for x from 0 by cellsize repeat (1+ +board-cells+) do
           (line-hori renderer +board-line-width+ 0 x boardsize)
           (line-vert renderer +board-line-width+ x 0 boardsize))

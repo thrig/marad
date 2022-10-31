@@ -1,0 +1,189 @@
+Marad Game Rules
+
+In the event that a computer is lacking (how are you reading this if the
+power is out?) Marad may be played with not much equipment; a nine by
+nine board is required, ideally with some means to mark the central
+scoring square. Two king pieces, four bishop pieces, and eight pawn
+pieces are required, with some means (notches, colors, etc) used to
+distinguish to which side these pieces belong. A four-sided die is
+required to dtermine the number of moves in each turnpair, though this
+could also be done with two coin flips:
+
+    Coin Flips    Move Count
+    TT            1 
+    TH            2
+    HT            3
+    HH            4
+
+A means to keep score is also advisable (pencil and paper, knots in a
+string, notches on a stick, etc) as disputes may arise where the memory
+of a player is faulty for some reason.
+
+The kings can move in any direction; the bishops only by the diagonals,
+and the pawns only by horizontal or vertical motion. One piece is moved
+per turn by the number of squares given by the Move Count for the
+turnpair. The piece moves the full amount of the move count, pushing all
+pieces it encounters back, unless the piece being moved or one that
+would be pushed encounters the edge of the board. In this case the
+motion stops and any remaining moves of the Move Count are discarded for
+the current player.
+
+    ...  . .   .
+    .K.   B   .P.
+    ...  . .   .
+
+Both players share the same Move Count for each turnpair; the players
+could alternate generating the necessary entropy, or perhaps the first
+player could roll the new Move Count at the beginning of their turn,
+which then is repeated for the second player.
+
+A player is awarded one point if a piece of theirs moves into the
+central square and remains there at the end of each turn after the
+motion has been resolved. A point is not awarded when there is no
+motion, or if a piece only passes through the central square on its way
+to somewhere else. The game should be limited to some number of turns; I
+am not certain how many this will need to be for a fair but not too long
+of a game. The number of turns to play should probably be agreed on in
+advance by the players, or could be extended during play by mutual
+agreement.
+
+The pieces are arranged as follows; "K" or "k" is the King, "B" or "b"
+represent the Bishop, "P" or "p" the pawns. The central scoring square
+is marked with an "o", for reference.
+
+    .........
+    .B.....b.
+    .P.....p.
+    .P.....p.
+    .K..o..k.
+    .P.....p.
+    .P.....p.
+    .B.....b.
+    .........
+
+The pieces could also be arranged horizontally; this would be a simple
+rotation of the above board.
+
+From this starting board, sample gameplay might run as follows:
+
+1. A "3" is rolled. The first player moves their "K" 3 squares to the
+   right, scoring 1 point:
+
+    .........
+    .B.....b.
+    .P.....p.
+    .P.....p.
+    ....K..k.
+    .P.....p.
+    .P.....p.
+    .B.....b.
+    .........
+
+2. The second player also has "3" movement points, so moves their "k" to
+   the scoring square. This pushes the "K" of the first player back, and
+   the second player also scores 1 point:
+
+    .........
+    .B.....b.
+    .P.....p.
+    .P.....p.
+    ...Kk....
+    .P.....p.
+    .P.....p.
+    .B.....b.
+    .........
+
+3. The first player rolls again, this time "4". They move one of their
+   bishops, displacing the opposing King. No points are scored as no
+   piece ended the turn in the central square:
+
+    .........
+    .B.....b.
+    .P....kp.
+    .P...B.p.
+    ...Ko....
+    .P.....p.
+    .P.....p.
+    .......b.
+    .........
+
+4. The second player also has "4" movement points; they move one
+   of their pawns, pushing back the opposing Bishop. Again, no points
+   are scored:
+
+    .........
+    .B.....b.
+    .P....kp.
+    .PBp.....
+    ...Ko....
+    .P.....p.
+    .P.....p.
+    .......b.
+    .........
+
+5. Player one rolls a "1", so moves their King, scoring a point:
+
+    .........
+    .B.....b.
+    .P....kp.
+    .PBp.....
+    ....K....
+    .P.....p.
+    .P.....p.
+    .......b.
+    .........
+
+6. Player two moves a bishop, also pushing their King. No points
+   are scored.
+
+    .........
+    .B.......
+    .P....bp.
+    .PBp.k...
+    ....K....
+    .P.....p.
+    .P.....p.
+    .......b.
+    .........
+
+7. Player one rolls a "4", and moves a pawn. No points are scored as
+   their King though in the scoring square did not move into the square
+   this turn.
+
+    .........
+    .B.......
+    .P....bp.
+    .PBp.k...
+    ....K....
+    .P.....p.
+    .....P.p.
+    .......b.
+    .........
+
+8. Player two now concludes this tutorial by moving their King four
+   squares to the left. This pushes three pieces but halts the motion
+   after only two moves due to a pawn hitting the edge of the board.
+   Again, no points are scored.
+
+    .........
+    .B.......
+    .P....bp.
+    PBpk.....
+    ....K....
+    .P.....p.
+    .....P.p.
+    .......b.
+    .........
+
+Obvious tactics would be to bump bishops off good diagonals, or to use
+stacks of pieces to halt the piece you want on the scoring square, etc.
+I have not play tested this much for fun or balance (there is a release
+date deadline I am working against) but hopefully there's some of both
+present. Another point is that players can push each other off and back
+onto the scoring point (e.g. when "3" is rolled as the opening move
+count). Hopefully the varied entropy will prevent too much of such
+repeated moves.
+
+The rules have been expounded to some length because for many historical
+games we have no or little idea how they were played. On the other hand,
+there have been many bad games and we might be better off not knowing.
