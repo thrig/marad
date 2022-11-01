@@ -134,6 +134,7 @@
     (loop for x from 0 by cellsize repeat (1+ +board-cells+) do
           (line-hori renderer +board-line-width+ 0 x boardsize)
           (line-vert renderer +board-line-width+ x 0 boardsize))
+    ; TODO draw the board pieces uh can we get a bitmap for those?
     ))
 
 (defun update (app)

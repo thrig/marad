@@ -10,4 +10,5 @@
                (:static-file "LICENSE")
                (:file "package")
                (:file "graph" :depends-on ("package"))
-               (:file "marad" :depends-on ("package" "graph"))))
+               (:file "board" :depends-on ("package"))
+               (:file "marad" :depends-on ("package" "graph" "board"))))

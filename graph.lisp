@@ -10,6 +10,10 @@
 ; "Emergence of hierarchy in cost-driven growth of spatial networks"
 ; https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3670315/
 ; https://github.com/thrig/ministry-of-silly-vaults/tree/master/spatial-network
+;
+; The following code, however, has probably no impact on gameplay. It is
+; used to draw the background art, as I could not think of any way to
+; use the graph in a game.
 
 (in-package :marad)
 
