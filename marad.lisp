@@ -55,7 +55,8 @@
   rend      ; SDL renderer
   graph     ; background graph art thing
   slope     ; a slope function for the graph
-  images    ; textures, actually
+  numbers   ; textures for numbers because ENOSDLTTF
+  pieces    ; textures for the game pieces
   board     ; game board
   state     ; funcall of how to handle a click
   src       ; boardcell of where a move is starting from
@@ -140,7 +141,7 @@
          (boardsize (app-cellwidth app))
          (cellsize (app-cellsize app))
          (middle (* cellsize +middle-cell+))
-         (images (app-images app))
+         (pieces (app-pieces app))
          (game (app-board app))
          )
     (fill-rect renderer 0 0 boardsize boardsize)
@@ -156,7 +157,7 @@
       (game board row col owner type)
       ;(format t "PIECE ~a ~a ~a,~a ~a,~a~&" type owner) 
       (sdl2:render-copy
-        renderer (aref images owner (1- type))
+        renderer (aref pieces owner (1- type))
         :dest-rect (sdl2:make-rect (+ *offset-x* (* cellsize col))
                                    (+ *offset-y* (* cellsize row))
                                    cellsize cellsize)))
@@ -184,11 +185,7 @@
                    (boardcell-y src) row
                    (boardcell-x src) col)))))))
 
-; pick where to move a selected piece to
-; have we got a valid move? if not, go back to prior state
-; may not need to store the "dst" point... actually might need that
-; elsewhere to log the move in some notation, or it could be a vector
-; for something something
+; move and advance the game if it's a valid move
 (defun movestate-finalize (app game dsty dstx)
   (let* ((src (app-src app))
          (srcx (boardcell-x src))
@@ -205,10 +202,8 @@
           (next-turn game)
           (setf (app-state app) #'movestate-set-active
                 (app-type app) +empty-cell+))
-        ; here we stay in "select a finalize cell" mode
-        (format t "MOVE MISMATCH ~a ~a~&" mtype (app-type app))
-        )
-      )))
+        ; not a legal move - here we stay in the finalize state
+        (format t "MOVE MISMATCH ~a ~a~&" mtype (app-type app))))))
 
 ; reset the active (src) cell, probably from a click outside the board
 (defun movestate-reset (app)
@@ -264,15 +259,29 @@
         (free-surface surface)
         texture)))
 
-(defun load-images (app renderer)
-  (let ((images (make-array '(2 3))) surface)
-    (psetf (aref images 0 0) (load-image renderer "image/white-pawn.bmp")
-           (aref images 0 1) (load-image renderer "image/white-bishop.bmp")
-           (aref images 0 2) (load-image renderer "image/white-king.bmp")
-           (aref images 1 0) (load-image renderer "image/black-pawn.bmp")
-           (aref images 1 1) (load-image renderer "image/black-bishop.bmp")
-           (aref images 1 2) (load-image renderer "image/black-king.bmp"))
-    (setf (app-images app) images)))
+(defun load-numbers (app renderer)
+  (let ((numbers (make-array 10)) surface)
+    (psetf (aref numbers 0) (load-image renderer "image/0.bmp")
+           (aref numbers 1) (load-image renderer "image/1.bmp")
+           (aref numbers 2) (load-image renderer "image/2.bmp")
+           (aref numbers 3) (load-image renderer "image/3.bmp")
+           (aref numbers 4) (load-image renderer "image/4.bmp")
+           (aref numbers 5) (load-image renderer "image/5.bmp")
+           (aref numbers 6) (load-image renderer "image/6.bmp")
+           (aref numbers 7) (load-image renderer "image/7.bmp")
+           (aref numbers 8) (load-image renderer "image/8.bmp")
+           (aref numbers 9) (load-image renderer "image/9.bmp"))
+    (setf (app-numbers app) numbers)))
+
+(defun load-pieces (app renderer)
+  (let ((pieces (make-array '(2 3))) surface)
+    (psetf (aref pieces 0 0) (load-image renderer "image/white.1.bmp")
+           (aref pieces 0 1) (load-image renderer "image/white.2.bmp")
+           (aref pieces 0 2) (load-image renderer "image/white.3.bmp")
+           (aref pieces 1 0) (load-image renderer "image/black.1.bmp")
+           (aref pieces 1 1) (load-image renderer "image/black.2.bmp")
+           (aref pieces 1 2) (load-image renderer "image/black.3.bmp"))
+    (setf (app-pieces app) pieces)))
 
 (defun new-world ()
   (setq *random-state* (make-random-state t))
@@ -303,7 +312,8 @@
       (win :title "Marad" :w +game-width+ :h +game-height+ :flags '(:shown))
       (sdl2:with-renderer
         (renderer win :flags '(:accelerated))
-        (load-images app renderer)
+        (load-numbers app renderer)
+        (load-pieces app renderer)
         (setf (app-rend app) renderer)
         (update app)
         (eventually app)))))

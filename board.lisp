@@ -127,14 +127,18 @@
                                        :initial-element 0))))
 
 (defun next-turn (game)
+  ; increase score for the player whose moved piece is in the middle
+  (let ((cell (aref (gameboard-board game) +middle-cell+ +middle-cell+)))
+    (when (plusp (ldb (byte 1 +board-moved+) cell))
+      (incf (aref (gameboard-score game)
+                  (board-get-flag +board-player+ cell)))))
+  ; in theory we need only clear the moved bit from the scoring cell,
+  ; and the whole board only before saving the game, but this keeps the
+  ; board clean
+  (clear-moved game)
   (let ((turn (incf (gameboard-turn game))))
     (when (zerop (mod turn 2))
       (setf (gameboard-moves game) (move-count)))))
-
-; did something move in the given cell (probably the central scoring cell)
-(defun moved? (game row col)
-  (plusp (ldb (byte 1 +board-moved+)
-              (aref (gameboard-board game) row col))))
 
 ; is a move square, diagonal, or not good? PORTABILITY SBCL is okay with
 ; not returning enough VALUES for the "not good" condition, maybe
