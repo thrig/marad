@@ -61,13 +61,6 @@
            (let ((,owner (board-get-flag +board-player+ ,cell)))
              ,@body))))))
 
-; this may result in nothing or several things happening
-; uh once it is written, anyways
-(defun do-move (game srcx srcy stepx stepy)
-  (let ((move-count (gameboard-moves game)))
-    )
-  )
-
 (defun cell-details (cell)
   (values (board-get-type cell)
           (board-get-flag +board-player+ cell)))
@@ -88,6 +81,30 @@
 
 ; this is rolled at the beginning of each turnpair
 (defun move-count () (1+ (random 4)))
+
+(defun move-pushing (board moves srcx srcy stepx stepy)
+  (labels ((swap (a b x z)
+             (board-set-flag +board-moved+ (aref board b a))
+             (rotatef (aref board b a) (aref board z x)))
+           (stepwise (a b)
+             (if (array-in-bounds-p board b a)
+               (if (plusp (aref board b a))
+                 (let* ((newa (+ a stepx)) (newb (+ b stepy))
+                        (result (stepwise newa newb)))
+                   (ecase result
+                     (:stop :stop)
+                     (:move (swap a b newa newb) :move)))
+                 :move)
+               :stop)))
+    (loop with nextx = (+ srcx stepx) and nexty = (+ srcy stepy)
+          repeat moves do
+          (let ((result (stepwise nextx nexty)))
+            (ecase result
+              (:stop (return))
+              (:move (swap srcx srcy nextx nexty)
+                     (psetf srcx nextx srcy nexty)
+                     (incf nextx stepx)
+                     (incf nexty stepy)))))))
 
 ; a gameboard in the starting position. the pieces are vertical as I was
 ; thinking of Archon (1983) when playtesting the game with some coins on

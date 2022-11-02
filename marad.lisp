@@ -199,7 +199,8 @@
       (if (legal-move? mtype (app-type app))
         (progn
           (format t "VERILY MOVE ~a,~a ~a,~a ~a,~a~&" srcx srcy dstx dsty stepx stepy)
-          (do-move game srcx srcy stepx stepy)
+          (move-pushing (gameboard-board game) (gameboard-moves game)
+                        srcx srcy stepx stepy)
           ; TODO if current player gets cached in app must also toggle that
           (next-turn game)
           (setf (app-state app) #'movestate-set-active
