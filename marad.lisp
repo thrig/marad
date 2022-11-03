@@ -4,26 +4,28 @@
 ;   between Babylon and Isin. The city's main temple, a ziggurat, is
 ;   E-igi-kalama (House which is the eye of the land)"
 ;     -- https://en.wikipedia.org/wiki/Marad
-;
-; Yep, pretty much picked that at random.
 
 (in-package :marad)
 
 ; TODO ask SDL what the screen size is and then derive a bunch of the
-; following constants from that
+; following constants from that (and fail if screen too small?)
 (defconstant +game-width+ 1280)
 (defconstant +game-height+ 800)
 
 ; for a NxN board
 (defconstant +board-cells+ 9)
+(defconstant +max-cell+ 8)
 (defconstant +middle-cell+ 4)
 ; don't let the board take up all the window. TODO also probably need
 ; some space to show the score and the move count for the turn pair
-(defconstant +border-x+ 64)
+(defconstant +border-x+ 256)
 (defconstant +border-y+ 40)
 (defconstant +border-offx+ (/ +border-x+ 2))
 (defconstant +border-offy+ (/ +border-y+ 2))
 (defconstant +board-line-width+ 2)
+(defconstant +board-extra-tweak+ 8)
+
+(defconstant +src-indicator-size+ 16)
 
 ; the graph (background art) extends a bit beyond the window boundaries
 (defconstant +graph-more+ 128)
@@ -39,8 +41,8 @@
 (defparameter *offset-y* 0)
 
 ; probably lower this number on a slower system as a higher count can
-; eat up CPU figuring out how best to wire up the graph for the
-; background art. or just disable all that code.
+; eat up CPU figuring out the graph for the background art. or just
+; disable all that code.
 (defconstant +node-count+ 128)
 
 (defconstant +sdl-delay+ 128)   ; do not burn up the CPU too much
@@ -60,7 +62,7 @@
   board     ; game board
   state     ; funcall of how to handle a click
   src       ; boardcell of where a move is starting from
-  type      ; type of the src cell (King, Bishop, Pawn)
+  (type +empty-cell+ :type fixnum) ; type of the src cell
   cellwidth ; how big the board is
   cellsize  ; how big a board cell is
   cellxoff  ; where to start drawing the board from
@@ -142,8 +144,8 @@
          (cellsize (app-cellsize app))
          (middle (* cellsize +middle-cell+))
          (pieces (app-pieces app))
-         (game (app-board app))
-         )
+         (game (app-board app)))
+    ; draw the board and grid it up
     (fill-rect renderer 0 0 boardsize boardsize)
     (sdl2:set-render-draw-color renderer 208 208 208 128) ; center cell skari
     (fill-rect renderer middle middle cellsize cellsize)
@@ -151,18 +153,66 @@
     (loop for x from 0 by cellsize repeat (1+ +board-cells+) do
           (line-hori renderer +board-line-width+ 0 x boardsize)
           (line-vert renderer +board-line-width+ x 0 boardsize))
-    ; TODO draw the board pieces uh can we get a bitmap for those?
-    ; TODO with-gameboard is causing weird errors here dunno why
+    ; show the game pieces
     (with-board-pieces
       (game board row col owner type)
-      ;(format t "PIECE ~a ~a ~a,~a ~a,~a~&" type owner) 
       (sdl2:render-copy
         renderer (aref pieces owner (1- type))
         :dest-rect (sdl2:make-rect (+ *offset-x* (* cellsize col))
                                    (+ *offset-y* (* cellsize row))
                                    cellsize cellsize)))
-  ; TODO draw active? cell if that is enabled
-  ))
+    ; active cell indicator thing
+    (when (plusp (app-type app))
+      (sdl2:set-render-draw-color renderer 255 0 0 255) ; src cell skari
+      (let ((src (app-src app)))
+        (fill-rect renderer
+                   (* cellsize (boardcell-x src))
+                   (* cellsize (boardcell-y src))
+                   +src-indicator-size+ +src-indicator-size+)))
+    ; whose move is it and the turnpair move-count
+    (let ((player (mod (gameboard-turn game) 2))
+          (move-count (gameboard-moves game))
+          (numbers (app-numbers app))
+          (score (gameboard-score game))
+          )
+      (sdl2:set-render-draw-color renderer 255 255 255 240) ; move bg skari
+      (fill-rect renderer (- (* cellsize -1) +board-extra-tweak+) 0
+                 cellsize cellsize)
+      (fill-rect renderer (+ (* cellsize +board-cells+) +board-extra-tweak+) 0
+                 cellsize cellsize)
+      (if (zerop player)
+        (sdl2:render-copy
+          renderer (aref numbers move-count)
+          :dest-rect (sdl2:make-rect (- (+ *offset-x* (* cellsize -1))
+                                        +board-extra-tweak+)
+                                     *offset-y* cellsize cellsize))
+        (sdl2:render-copy
+          renderer (aref numbers move-count)
+          :dest-rect (sdl2:make-rect (+ (+ *offset-x* (* cellsize +board-cells+))
+                                        +board-extra-tweak+)
+                                     *offset-y* cellsize cellsize)))
+      (sdl2:set-render-draw-color renderer 255 255 255 240) ; score bg skari
+      ; player 1 score
+      (fill-rect renderer (- (* cellsize -1) +board-extra-tweak+)
+                 (* cellsize +max-cell+) cellsize cellsize)
+      (sdl2:render-copy
+        renderer (aref numbers (aref score 0))
+        :dest-rect (sdl2:make-rect (- (+ *offset-x* (* cellsize -1))
+                                      +board-extra-tweak+)
+                                   (+ *offset-y* (* cellsize +max-cell+))
+                                   cellsize cellsize))
+      ; player 2 score
+      (fill-rect renderer (+ (* cellsize +board-cells+) +board-extra-tweak+)
+                 (* cellsize +max-cell+) cellsize cellsize)
+      (sdl2:render-copy
+        renderer (aref numbers (aref score 1))
+        :dest-rect (sdl2:make-rect (+ (+ *offset-x*
+                                         (* cellsize +board-cells+))
+                                      +board-extra-tweak+)
+                                   (+ *offset-y* (* cellsize +max-cell+))
+                                   cellsize cellsize))
+      )
+    ))
 
 (defun update (app)
   (let ((renderer (app-rend app)))
@@ -200,8 +250,7 @@
                         srcx srcy stepx stepy)
           ; TODO if current player gets cached in app must also toggle that
           (next-turn game)
-          (setf (app-state app) #'movestate-set-active
-                (app-type app) +empty-cell+))
+          (movestate-reset app))
         ; not a legal move - here we stay in the finalize state
         (format t "MOVE MISMATCH ~a ~a~&" mtype (app-type app))))))
 

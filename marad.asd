@@ -1,6 +1,6 @@
-;   <Uncle Somf> How are we doing, $outlaw_name?
-;   <$outlaw_name> The same as always, Uncle!
-;   <Uncle Somf> That bad, huh?
+;   < Uncle Somf> How are we doing, $outlaw_name?
+;   < $outlaw_name> The same as always, Uncle!
+;   < Uncle Somf> That bad, huh?
 ;     -- The Battle for Wesnoth. David White et al. 2005.
 
 (asdf:defsystem
