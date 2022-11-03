@@ -12,8 +12,12 @@
 ; though not all of those bits are used; 4, 5 are free and 6,7 are for
 ; player ownership and did this piece move?
 
-; TODO probably want sub-packages for /graph and /board
 (in-package :marad)
+
+; TWEAK how many points it takes to win. KLUGE must be kept below 16 for
+; reasons you might discover elsewhere (hint: load-numbers)
+(defconstant +victory-points+ 15)
+(defconstant +no-moves+ 0)
 
 (defconstant +empty-cell+ 0)
 (defconstant +move-other+ 0)
@@ -130,15 +134,19 @@
   ; increase score for the player whose moved piece is in the middle
   (let ((cell (aref (gameboard-board game) +middle-cell+ +middle-cell+)))
     (when (plusp (ldb (byte 1 +board-moved+) cell))
-      (incf (aref (gameboard-score game)
-                  (board-get-flag +board-player+ cell)))))
+      (when (>= (incf (aref (gameboard-score game)
+                            (board-get-flag +board-player+ cell)))
+                +victory-points+)
+        (setf (gameboard-moves game) +no-moves+)
+        (return-from next-turn))))
   ; in theory we need only clear the moved bit from the scoring cell,
   ; and the whole board only before saving the game, but this keeps the
   ; board clean
   (clear-moved game)
   (let ((turn (incf (gameboard-turn game))))
     (when (zerop (mod turn 2))
-      (setf (gameboard-moves game) (move-count)))))
+      (setf (gameboard-moves game) (move-count))))
+  t)
 
 ; is a move square, diagonal, or not good? PORTABILITY SBCL is okay with
 ; not returning enough VALUES for the "not good" condition, maybe

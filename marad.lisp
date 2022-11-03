@@ -4,20 +4,24 @@
 ;   between Babylon and Isin. The city's main temple, a ziggurat, is
 ;   E-igi-kalama (House which is the eye of the land)"
 ;     -- https://en.wikipedia.org/wiki/Marad
+;
+; there may be things to TWEAK
 
 (in-package :marad)
 
 ; TODO ask SDL what the screen size is and then derive a bunch of the
-; following constants from that (and fail if screen too small?)
-(defconstant +game-width+ 1280)
-(defconstant +game-height+ 800)
+; following constants from that (and fail if the screen is too small?)
+; TWEAK change this to make (probably) a bigger window. search also for
+; fullscreen
+(defconstant +game-width+ 1024)
+(defconstant +game-height+ 768)
 
-; for a NxN board
 (defconstant +board-cells+ 9)
 (defconstant +max-cell+ 8)
+; this is the score cell, move into here to get points
 (defconstant +middle-cell+ 4)
-; don't let the board take up all the window. TODO also probably need
-; some space to show the score and the move count for the turn pair
+; don't let the board take up all the game window. NOTE the X border
+; needs to have enough space to show a cell and a bit more
 (defconstant +border-x+ 256)
 (defconstant +border-y+ 40)
 (defconstant +border-offx+ (/ +border-x+ 2))
@@ -47,6 +51,8 @@
 
 (defconstant +sdl-delay+ 128)   ; do not burn up the CPU too much
 
+(defconstant +game-over+ -1)
+
 ; what cell in the board is selected
 (defstruct (boardcell (:type vector))
   (x 0 :type fixnum)
@@ -66,8 +72,7 @@
   cellwidth ; how big the board is
   cellsize  ; how big a board cell is
   cellxoff  ; where to start drawing the board from
-  cellyoff
-  )
+  cellyoff)
 
 (defun draw-line (renderer x1 y1 x2 y2)
   (sdl2:render-draw-line renderer
@@ -161,20 +166,29 @@
         :dest-rect (sdl2:make-rect (+ *offset-x* (* cellsize col))
                                    (+ *offset-y* (* cellsize row))
                                    cellsize cellsize)))
-    ; active cell indicator thing
-    (when (plusp (app-type app))
-      (sdl2:set-render-draw-color renderer 255 0 0 255) ; src cell skari
-      (let ((src (app-src app)))
-        (fill-rect renderer
-                   (* cellsize (boardcell-x src))
-                   (* cellsize (boardcell-y src))
-                   +src-indicator-size+ +src-indicator-size+)))
+    (let ((type (app-type app)))
+      (cond ((plusp type)
+              ; active cell indicator thing
+              (sdl2:set-render-draw-color renderer 255 0 0 255) ; src skari
+              (let ((src (app-src app)))
+                (fill-rect renderer
+                           (* cellsize (boardcell-x src))
+                           (* cellsize (boardcell-y src))
+                           +src-indicator-size+ +src-indicator-size+)))
+            ((= type +game-over+)
+              (sdl2:set-render-draw-color renderer 255 255 255 255)
+              (fill-rect renderer 0 0 boardsize boardsize)
+              (sdl2:render-copy
+                renderer (aref (app-numbers app)
+                               (1+ (mod (gameboard-turn game) 2)))
+                :dest-rect (sdl2:make-rect (+ *offset-x* middle)
+                                           (+ *offset-y* middle)
+                                           cellsize cellsize)))))
     ; whose move is it and the turnpair move-count
     (let ((player (mod (gameboard-turn game) 2))
           (move-count (gameboard-moves game))
           (numbers (app-numbers app))
-          (score (gameboard-score game))
-          )
+          (score (gameboard-score game)))
       (sdl2:set-render-draw-color renderer 255 255 255 240) ; move bg skari
       (fill-rect renderer (- (* cellsize -1) +board-extra-tweak+) 0
                  cellsize cellsize)
@@ -210,9 +224,7 @@
                                          (* cellsize +board-cells+))
                                       +board-extra-tweak+)
                                    (+ *offset-y* (* cellsize +max-cell+))
-                                   cellsize cellsize))
-      )
-    ))
+                                   cellsize cellsize)))))
 
 (defun update (app)
   (let ((renderer (app-rend app)))
@@ -225,7 +237,7 @@
 ; pick the piece to move, if it's a valid one
 (defun movestate-set-active (app game row col)
   (when-let ((cell (get-cell game row col)))
-    (let ((player (mod (gameboard-turn game) 2))) ; TODO cache this in app
+    (let ((player (mod (gameboard-turn game) 2)))
       (multiple-value-bind (type owner)
                            (cell-details cell)
         (when (= player owner)
@@ -235,30 +247,29 @@
                    (boardcell-y src) row
                    (boardcell-x src) col)))))))
 
-; move and advance the game if it's a valid move
+; move and advance the game if it's a valid move. if not a legal move
+; the state remains in this state
 (defun movestate-finalize (app game dsty dstx)
   (let* ((src (app-src app))
          (srcx (boardcell-x src))
          (srcy (boardcell-y src)))
     (multiple-value-bind (mtype stepx stepy)
                          (move-type srcx srcy dstx dsty)
-      (format t "MOVE? ~a ~a~&" mtype (app-type app))
-      (if (legal-move? mtype (app-type app))
-        (progn
-          (format t "VERILY MOVE ~a,~a ~a,~a ~a,~a~&" srcx srcy dstx dsty stepx stepy)
-          (move-pushing (gameboard-board game) (gameboard-moves game)
-                        srcx srcy stepx stepy)
-          ; TODO if current player gets cached in app must also toggle that
-          (next-turn game)
-          (movestate-reset app))
-        ; not a legal move - here we stay in the finalize state
-        (format t "MOVE MISMATCH ~a ~a~&" mtype (app-type app))))))
+      (when (legal-move? mtype (app-type app))
+        (move-pushing (gameboard-board game) (gameboard-moves game)
+                      srcx srcy stepx stepy)
+        (if (next-turn game)
+          (movestate-reset app)
+          (psetf
+            (app-type app) +game-over+
+            (app-state app) #'movestate-gameover))))))
+
+(defun movestate-gameover (app game &rest unused))
 
 ; reset the active (src) cell, probably from a click outside the board
 (defun movestate-reset (app)
-  (format t "STATE RESET~&")
-  (setf (app-type app) +empty-cell+
-        (app-state app) #'movestate-set-active))
+  (psetf (app-type app) +empty-cell+
+         (app-state app) #'movestate-set-active))
 
 ; did they click somewhere within the game board? states here are to
 ; clear the source cell, set the source cell, and set the destination
@@ -272,44 +283,47 @@
          (y (floor (/ (- clicky offy +border-offy+) cellsize)))
          (game (app-board app)))
     (if (array-in-bounds-p (gameboard-board game) y x)
-      (progn
-        (format t "CELL? ~a,~a ~a,~a | ~a,~a -> ~a,~a~&" offx offy +border-offx+ +border-offy+ clicky clickx y x)
-        (funcall (app-state app) app game y x))
-      (movestate-reset app))
-    ))
+      (funcall (app-state app) app game y x)
+      (movestate-reset app))))
 
 (defun eventually (app)
   (sdl2:with-event-loop
     (:method :poll)
-    ; TODO more keyboard control of the game might be nice to have
     (:keyup
       (:keysym keysym)
       (let ((scancode (sdl2:scancode-value keysym))
             (sym (sdl2:sym-value keysym))
             (mod-value (sdl2:mod-value keysym)))
         (cond
-          ((sdl2:scancode= scancode :scancode-escape) (movestate-reset app))
-          ; this is for easy debugging, probably replace with Q when ship
-          ((sdl2:scancode= scancode :scancode-q) (sdl2:push-event :quit))
-          )
-        (format t "Key sym: ~a, code: ~a, mod: ~a~%" sym scancode mod-value)))
-    ; TODO steal a mouse and see other buttons get other button numbers.
-    ; in the meantime react to any old click
-    (:mousebuttondown
-      (:x x :y y :button button)
-      (click-to-board app x y))
+          ((sdl2:scancode= scancode :scancode-escape)
+            (if (= (app-type app) +game-over+)
+              (setf numbers (app-numbers app) ; KLUGE reset the game
+                    pieces (app-pieces app)
+                    rend (app-rend app)
+                    app (new-world)
+                    (app-rend app) rend
+                    (app-pieces app) pieces
+                    (app-numbers app) numbers)
+              (movestate-reset app)))
+          ((and (= mod-value 1) (sdl2:scancode= scancode :scancode-q)) ; Quit
+            (sdl2:push-event :quit)))))
+    (:mousebuttondown (:x x :y y :button button) (click-to-board app x y))
     (:idle () (update app) (sdl2:delay +sdl-delay+))
     (:quit () t)))
 
 (defun load-image (renderer filename)
   (let ((surface (load-bmp filename)))
-    (sdl2:set-color-key surface :true (sdl2:map-rgb (sdl2:surface-format surface) 255 255 255))
-      (let ((texture (sdl2:create-texture-from-surface renderer surface)))
-        (free-surface surface)
-        texture)))
+    (sdl2:set-color-key surface :true
+                        (sdl2:map-rgb (sdl2:surface-format surface)
+                                      255 255 255))
+    (let ((texture (sdl2:create-texture-from-surface renderer surface)))
+      (free-surface surface)
+      texture)))
 
+; TODO get SDL TTF working somehow, this is silly
+; on the plus side this keeps the game from going on too long
 (defun load-numbers (app renderer)
-  (let ((numbers (make-array 10)) surface)
+  (let ((numbers (make-array 16)) surface)
     (psetf (aref numbers 0) (load-image renderer "image/0.bmp")
            (aref numbers 1) (load-image renderer "image/1.bmp")
            (aref numbers 2) (load-image renderer "image/2.bmp")
@@ -319,9 +333,16 @@
            (aref numbers 6) (load-image renderer "image/6.bmp")
            (aref numbers 7) (load-image renderer "image/7.bmp")
            (aref numbers 8) (load-image renderer "image/8.bmp")
-           (aref numbers 9) (load-image renderer "image/9.bmp"))
+           (aref numbers 9) (load-image renderer "image/9.bmp")
+           (aref numbers 10) (load-image renderer "image/10.bmp")
+           (aref numbers 11) (load-image renderer "image/11.bmp")
+           (aref numbers 12) (load-image renderer "image/12.bmp")
+           (aref numbers 13) (load-image renderer "image/13.bmp")
+           (aref numbers 14) (load-image renderer "image/14.bmp")
+           (aref numbers 15) (load-image renderer "image/15.bmp"))
     (setf (app-numbers app) numbers)))
 
+; TODO how make these pieces load relative to the system or similar?
 (defun load-pieces (app renderer)
   (let ((pieces (make-array '(2 3))) surface)
     (psetf (aref pieces 0 0) (load-image renderer "image/white.1.bmp")
@@ -359,6 +380,8 @@
     (:everything)
     (sdl2:with-window
       (win :title "Marad" :w +game-width+ :h +game-height+ :flags '(:shown))
+      ; TWEAK
+      ;(sdl2:set-window-fullscreen win t)
       (sdl2:with-renderer
         (renderer win :flags '(:accelerated))
         (load-numbers app renderer)

@@ -45,7 +45,6 @@
        (prog1 (cadr prev)
               (rplacd prev (cddr prev))))))
 
-; TODO poisson disk sample instead to keep the points more apart?
 (defmacro with-random-points ((rows cols n row col) &body body)
   (let ((total (gensym)) (remain (gensym)) (maxcol (gensym)))
     `(do* ((,total (* ,rows ,cols) (1- ,total))
@@ -93,7 +92,6 @@
         (setf (nodeset-pop-max nset) pop))
       (push (make-snode :yy y :xx x :population pop)
             (nodeset-unconn nset))))
-  ; TODO this instead should be a random point
   (push (pop (nodeset-unconn nset)) (nodeset-network nset))
   (loop while (nodeset-unconn nset) do (highlander nset))
   nset)
