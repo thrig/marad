@@ -24,6 +24,8 @@ Clicking outside the board will clear any active selection. The escape
 key will do this, or after a game has been won, will start a new game.
 The "Q" key will quit the game at any point.
 
+See also gemini://thrig.me/game/marad.gmi
+
 INSTALLATION
 
 On OpenBSD, installation might run along the lines of:
