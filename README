@@ -31,7 +31,7 @@ INSTALLATION
 On OpenBSD, installation might run along the lines of:
 
 	# required system packages (may be incomplete)
-	doas pkg_add gnupg sbcl sdl2
+	doas pkg_add git gnupg sbcl sdl2
 
 	# if one has not setup quicklisp ...
 	ftp https://beta.quicklisp.org/quicklisp.lisp

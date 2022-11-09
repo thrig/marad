@@ -16,8 +16,7 @@
 (defconstant +game-width+ 1024)
 (defconstant +game-height+ 768)
 
-(defconstant +board-cells+ 9)
-(defconstant +max-cell+ 8)
+(defconstant +max-cell+ (1- +board-size+))
 ; this is the score cell, move into here to get points
 (defconstant +middle-cell+ 4)
 ; don't let the board take up all the game window. NOTE the X border
@@ -80,16 +79,21 @@
                          (+ *offset-x* x2) (+ *offset-y* y2)))
 
 (defun draw-rect (renderer x1 y1 width height)
-  (sdl2:render-draw-rect
-    renderer (sdl2:make-rect
-               (+ *offset-x* x1) (+ *offset-y* y1)
-               width height)))
+  (let ((rect (sdl2:make-rect (+ *offset-x* x1) (+ *offset-y* y1)
+                              width height)))
+    (sdl2:render-draw-rect renderer rect)
+    (free-rect rect)))
 
 (defun fill-rect (renderer x1 y1 width height)
-  (sdl2:render-fill-rect
-    renderer (sdl2:make-rect
-               (+ *offset-x* x1) (+ *offset-y* y1)
-               width height)))
+  (let ((rect (sdl2:make-rect (+ *offset-x* x1) (+ *offset-y* y1)
+                              width height)))
+    (sdl2:render-fill-rect renderer rect)
+    (free-rect rect)))
+
+(defun render-rect (renderer texture x1 y1 width height)
+  (let ((rect (sdl2:make-rect x1 y1 width height)))
+    (sdl2:render-copy renderer texture :dest-rect rect)
+    (free-rect rect)))
 
 (defun line-hori (renderer width x1 y1 length)
   (let* ((adjust (truncate (/ width 2))) (x2 (+ x1 length adjust)))
@@ -149,23 +153,23 @@
          (cellsize (app-cellsize app))
          (middle (* cellsize +middle-cell+))
          (pieces (app-pieces app))
-         (game (app-board app)))
+         (game (app-board app))
+         (player (gameboard-player game)))
     ; draw the board and grid it up
     (fill-rect renderer 0 0 boardsize boardsize)
     (sdl2:set-render-draw-color renderer 208 208 208 128) ; center cell skari
     (fill-rect renderer middle middle cellsize cellsize)
     (sdl2:set-render-draw-color renderer 32 32 32 240) ; board line skari
-    (loop for x from 0 by cellsize repeat (1+ +board-cells+) do
+    (loop for x from 0 by cellsize repeat (1+ +board-size+) do
           (line-hori renderer +board-line-width+ 0 x boardsize)
           (line-vert renderer +board-line-width+ x 0 boardsize))
     ; show the game pieces
     (with-board-pieces
       (game board row col owner type)
-      (sdl2:render-copy
-        renderer (aref pieces owner (1- type))
-        :dest-rect (sdl2:make-rect (+ *offset-x* (* cellsize col))
-                                   (+ *offset-y* (* cellsize row))
-                                   cellsize cellsize)))
+      (render-rect renderer (aref pieces owner (1- type))
+                   (+ *offset-x* (* cellsize col))
+                   (+ *offset-y* (* cellsize row))
+                   cellsize cellsize))
     (let ((type (app-type app)))
       (cond ((plusp type)
               ; active cell indicator thing
@@ -178,53 +182,45 @@
             ((= type +game-over+)
               (sdl2:set-render-draw-color renderer 255 255 255 255)
               (fill-rect renderer 0 0 boardsize boardsize)
-              (sdl2:render-copy
-                renderer (aref (app-numbers app)
-                               (1+ (mod (gameboard-turn game) 2)))
-                :dest-rect (sdl2:make-rect (+ *offset-x* middle)
-                                           (+ *offset-y* middle)
-                                           cellsize cellsize)))))
-    ; whose move is it and the turnpair move-count
-    (let ((player (mod (gameboard-turn game) 2))
-          (move-count (gameboard-moves game))
+              (render-rect renderer (aref (app-numbers app) (1+ player))
+                           (+ *offset-x* middle)
+                           (+ *offset-y* middle)
+                           cellsize cellsize))))
+    ; display whose move is it with the move count
+    (let ((move-count (gameboard-moves game))
           (numbers (app-numbers app))
           (score (gameboard-score game)))
       (sdl2:set-render-draw-color renderer 255 255 255 240) ; move bg skari
       (fill-rect renderer (- (* cellsize -1) +board-extra-tweak+) 0
                  cellsize cellsize)
-      (fill-rect renderer (+ (* cellsize +board-cells+) +board-extra-tweak+) 0
+      (fill-rect renderer (+ (* cellsize +board-size+) +board-extra-tweak+) 0
                  cellsize cellsize)
       (if (zerop player)
-        (sdl2:render-copy
-          renderer (aref numbers move-count)
-          :dest-rect (sdl2:make-rect (- (+ *offset-x* (* cellsize -1))
-                                        +board-extra-tweak+)
-                                     *offset-y* cellsize cellsize))
-        (sdl2:render-copy
-          renderer (aref numbers move-count)
-          :dest-rect (sdl2:make-rect (+ (+ *offset-x* (* cellsize +board-cells+))
-                                        +board-extra-tweak+)
-                                     *offset-y* cellsize cellsize)))
+        (render-rect renderer (aref numbers move-count)
+                     (- (+ *offset-x* (* cellsize -1))
+                        +board-extra-tweak+)
+                     *offset-y* cellsize cellsize)
+        (render-rect renderer (aref numbers move-count)
+                     (+ (+ *offset-x* (* cellsize +board-size+))
+                        +board-extra-tweak+)
+                     *offset-y* cellsize cellsize))
       (sdl2:set-render-draw-color renderer 255 255 255 240) ; score bg skari
       ; player 1 score
       (fill-rect renderer (- (* cellsize -1) +board-extra-tweak+)
                  (* cellsize +max-cell+) cellsize cellsize)
-      (sdl2:render-copy
-        renderer (aref numbers (aref score 0))
-        :dest-rect (sdl2:make-rect (- (+ *offset-x* (* cellsize -1))
-                                      +board-extra-tweak+)
-                                   (+ *offset-y* (* cellsize +max-cell+))
-                                   cellsize cellsize))
+      (render-rect renderer (aref numbers (aref score 0))
+                   (- (+ *offset-x* (* cellsize -1))
+                      +board-extra-tweak+)
+                   (+ *offset-y* (* cellsize +max-cell+))
+                   cellsize cellsize)
       ; player 2 score
-      (fill-rect renderer (+ (* cellsize +board-cells+) +board-extra-tweak+)
+      (fill-rect renderer (+ (* cellsize +board-size+) +board-extra-tweak+)
                  (* cellsize +max-cell+) cellsize cellsize)
-      (sdl2:render-copy
-        renderer (aref numbers (aref score 1))
-        :dest-rect (sdl2:make-rect (+ (+ *offset-x*
-                                         (* cellsize +board-cells+))
-                                      +board-extra-tweak+)
-                                   (+ *offset-y* (* cellsize +max-cell+))
-                                   cellsize cellsize)))))
+      (render-rect renderer (aref numbers (aref score 1))
+                   (+ (+ *offset-x* (* cellsize +board-size+))
+                      +board-extra-tweak+)
+                   (+ *offset-y* (* cellsize +max-cell+))
+                   cellsize cellsize))))
 
 (defun update (app)
   (let ((renderer (app-rend app)))
@@ -237,7 +233,7 @@
 ; pick the piece to move, if it's a valid one
 (defun movestate-set-active (app game row col)
   (when-let ((cell (get-cell game row col)))
-    (let ((player (mod (gameboard-turn game) 2)))
+    (let ((player (gameboard-player game)))
       (multiple-value-bind (type owner)
                            (cell-details cell)
         (when (= player owner)
@@ -297,13 +293,7 @@
         (cond
           ((sdl2:scancode= scancode :scancode-escape)
             (if (= (app-type app) +game-over+)
-              (setf numbers (app-numbers app) ; KLUGE reset the game
-                    pieces (app-pieces app)
-                    rend (app-rend app)
-                    app (new-world)
-                    (app-rend app) rend
-                    (app-pieces app) pieces
-                    (app-numbers app) numbers)
+              (reset-world app)
               (movestate-reset app)))
           ((and (= mod-value 1) (sdl2:scancode= scancode :scancode-q)) ; Quit
             (sdl2:push-event :quit)))))
@@ -358,7 +348,7 @@
   (let ((app (make-app))
         (graph (new-graph (+ +game-width+ +graph-more+)
                           (+ +game-height+ +graph-more+) +node-count+)))
-    (setf (app-board app) (new-gameboard +board-cells+)
+    (setf (app-board app) (new-gameboard)
           (app-state app) #'movestate-set-active
           (app-src app) (make-boardcell)
           (app-graph app) graph
@@ -368,12 +358,24 @@
     (multiple-value-bind (total size xoff yoff)
                          (square-size (- +game-width+ +border-x+)
                                       (- +game-height+ +border-y+)
-                                      +board-cells+)
+                                      +board-size+)
       (setf (app-cellwidth app) total
             (app-cellsize app) size
             (app-cellxoff app) xoff
             (app-cellyoff app) yoff))
     app))
+
+(defun reset-world (app)
+  (setq *random-state* (make-random-state t))
+  (let ((graph (new-graph (+ +game-width+ +graph-more+)
+                          (+ +game-height+ +graph-more+) +node-count+)))
+    (psetf (app-board app) (new-gameboard)
+           (app-state app) #'movestate-set-active
+           (app-type app) +empty-cell+
+           (app-graph app) graph
+           (app-slope app) (new-clamped-slope
+                             (nodeset-pop-min graph) +node-min-size+
+                             (nodeset-pop-max graph) +node-max-size+))))
 
 (defun main (&aux (app (new-world)))
   (sdl2:with-init

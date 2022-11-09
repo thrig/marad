@@ -3,10 +3,10 @@ Marad Game Rules
 In the event that a computer is lacking (how are you reading this if the
 power is out?) Marad may be played with not much equipment; a nine by
 nine board is required, ideally with some means to mark the central
-scoring square. Two king pieces, four bishop pieces, and eight pawn
+scoring square. Two King pieces, four Bishop pieces, and eight Rook
 pieces are required, with some means (notches, colors, etc) used to
 distinguish to which side these pieces belong. A four-sided die is
-required to dtermine the number of moves in each turnpair, though this
+required to determine the number of moves in each turnpair, though this
 could also be done with two coin flips:
 
     Coin Flips    Move Count
@@ -19,8 +19,8 @@ A means to keep score is also advisable (pencil and paper, knots in a
 string, notches on a stick, etc) as disputes may arise where the memory
 of a player is faulty for some reason.
 
-The kings can move in any direction; the bishops only by the diagonals,
-and the pawns only by horizontal or vertical motion. One piece is moved
+The Kings can move in any direction; the Bishops only by the diagonals,
+and the Rook only by horizontal or vertical motion. One piece is moved
 per turn by the number of squares given by the Move Count for the
 turnpair. The piece moves the full amount of the move count, pushing all
 pieces it encounters back, unless the piece being moved or one that
@@ -29,7 +29,7 @@ motion stops and any remaining moves of the Move Count are discarded for
 the current player.
 
     ...  . .   .
-    .K.   B   .P.
+    .K.   B   .R.
     ...  . .   .
 
 Both players share the same Move Count for each turnpair; the players
@@ -48,16 +48,16 @@ advance by the players, or could be extended during play by mutual
 agreement.
 
 The pieces are arranged as follows; "K" or "k" is the King, "B" or "b"
-represent the Bishop, "P" or "p" the pawns. The central scoring square
+represent the Bishop, "R" or "r" the Rooks. The central scoring square
 is marked with an "o", for reference.
 
     .........
     .B.....b.
-    .P.....p.
-    .P.....p.
+    .R.....r.
+    .R.....r.
     .K..o..k.
-    .P.....p.
-    .P.....p.
+    .R.....r.
+    .R.....r.
     .B.....b.
     .........
 
@@ -71,11 +71,11 @@ From this starting board, sample gameplay might run as follows:
 
     .........
     .B.....b.
-    .P.....p.
-    .P.....p.
+    .R.....r.
+    .R.....r.
     ....K..k.
-    .P.....p.
-    .P.....p.
+    .R.....r.
+    .R.....r.
     .B.....b.
     .........
 
@@ -85,39 +85,47 @@ From this starting board, sample gameplay might run as follows:
 
     .........
     .B.....b.
-    .P.....p.
-    .P.....p.
+    .R.....r.
+    .R.....r.
     ...Kk....
-    .P.....p.
-    .P.....p.
+    .R.....r.
+    .R.....r.
     .B.....b.
     .........
 
 3. The first player rolls again, this time "4". They move one of their
-   bishops, displacing the opposing King. No points are scored as no
+   Bishops, displacing the opposing King. No points are scored as no
    piece ended the turn in the central square:
 
     .........
     .B.....b.
-    .P....kp.
-    .P...B.p.
+    .R....kr.
+    .R....kr.
+    .R...B.r.
+    .R...B.r.
     ...Ko....
-    .P.....p.
-    .P.....p.
+    .R.....r.
+    .R.....r.
+    .R.....r.
+    .R.....r.
     .......b.
     .........
 
 4. The second player also has "4" movement points; they move one
-   of their pawns, pushing back the opposing Bishop. Again, no points
+   of their Rooks, pushing back the opposing Bishop. Again, no points
    are scored:
 
     .........
     .B.....b.
-    .P....kp.
-    .PBp.....
+    .R....kr.
+    .R....kr.
+    .RBr.....
+    .RBr.....
     ...Ko....
-    .P.....p.
-    .P.....p.
+    .R.....r.
+    .R.....r.
+    .R.....r.
+    .R.....r.
     .......b.
     .........
 
@@ -125,57 +133,73 @@ From this starting board, sample gameplay might run as follows:
 
     .........
     .B.....b.
-    .P....kp.
-    .PBp.....
+    .R....kr.
+    .R....kr.
+    .RBr.....
+    .RBr.....
     ....K....
-    .P.....p.
-    .P.....p.
+    .R.....r.
+    .R.....r.
+    .R.....r.
+    .R.....r.
     .......b.
     .........
 
-6. Player two moves a bishop, also pushing their King. No points
+6. Player two moves a Bishop, also pushing their King. No points
    are scored.
 
     .........
     .B.......
-    .P....bp.
-    .PBp.k...
+    .R....br.
+    .R....br.
+    .RBr.k...
+    .RBr.k...
     ....K....
-    .P.....p.
-    .P.....p.
+    .R.....r.
+    .R.....r.
+    .R.....r.
+    .R.....r.
     .......b.
     .........
 
-7. Player one rolls a "4", and moves a pawn. No points are scored as
+7. Player one rolls a "4", and moves a Rook. No points are scored as
    their King though in the scoring square did not move into the square
    this turn.
 
     .........
     .B.......
-    .P....bp.
-    .PBp.k...
+    .R....br.
+    .R....br.
+    .RBr.k...
+    .RBr.k...
     ....K....
-    .P.....p.
-    .....P.p.
+    .R.....r.
+    .R.....r.
+    .....R.r.
+    .....R.r.
     .......b.
     .........
 
 8. Player two now concludes this tutorial by moving their King four
    squares to the left. This pushes three pieces but halts the motion
-   after only two moves due to a pawn hitting the edge of the board.
+   after only two moves due to a Rook hitting the edge of the board.
    Again, no points are scored.
 
     .........
     .B.......
-    .P....bp.
-    PBpk.....
+    .R....br.
+    .R....br.
+    RBrk.....
+    RBrk.....
     ....K....
-    .P.....p.
-    .....P.p.
+    .R.....r.
+    .R.....r.
+    .....R.r.
+    .....R.r.
     .......b.
     .........
 
-Obvious tactics would be to bump bishops off good diagonals, or to use
+Obvious tactics would be to bump Bishops off good diagonals, or to use
 stacks of pieces to halt the piece you want on the scoring square, etc.
 I have not play tested this much for fun or balance (there is a release
 date deadline I am working against) but hopefully there's some of both

@@ -14,6 +14,8 @@
 
 (in-package :marad)
 
+(defconstant +board-size+ 9)
+
 ; TWEAK how many points it takes to win. KLUGE must be kept below 16 for
 ; reasons you might discover elsewhere (hint: load-numbers)
 (defconstant +victory-points+ 15)
@@ -21,24 +23,27 @@
 
 (defconstant +empty-cell+ 0)
 (defconstant +move-other+ 0)
-(defconstant +move-square+ 1)   ; also, the Pawn type
+(defconstant +move-square+ 1)   ; also, the Rook type
 (defconstant +move-diagonal+ 2) ; also, the Bishop type
-; King is "3", which is both a Pawn and a Bishop. see how that works?
+; King is "3", which is both a Rook and a Bishop. see how that works?
 
 ; flags
 (defconstant +board-player+ 6)
 (defconstant +board-moved+  7)
 
-; to textify the board with; player 0 gets PBK and player 1 lowercase
-; thereof for Pawn Bishop King. the pieces however only somewhat move
+; to textify the board with; player 0 gets RBK and player 1 lowercase
+; thereof for Rook Bishop King. the pieces however only somewhat move
 ; like chess pieces do
-(defparameter *piece-char* '((0 . #\.) (1 . #\P) (2 . #\B) (3 . #\K)))
+(defparameter *piece-char* '((0 . #\.) (1 . #\R) (2 . #\B) (3 . #\K)))
+
+; "0" for a move indicates that the entropy for the turnpair has not yet
+; been determined, or is an error if player 2 is to move
+(deftype move-count () '(integer 0 4))
 
 (defstruct (gameboard (:type vector))
-  (size 0 :type fixnum)
-  (turn 0 :type fixnum)
-  (moves 0 :type fixnum) ; how many moves are available in the turnpair
-  score
+  (moves 0 :type move-count)
+  (player 0 :type (unsigned-byte 1))
+  (score nil :type (simple-array fixnum (2)))
   board)
 
 (defmacro board-set-type (type x) `(setf (ldb (byte 4 0) ,x) ,type))
@@ -47,29 +52,28 @@
 (defmacro board-get-flag (flag x) `(ldb (byte 1 ,flag) ,x))
 (defmacro board-set-flag (flag x) `(setf (ldb (byte 1 ,flag) ,x) 1))
 
+(defmacro toggle (x) `(setf ,x (logxor ,x 1)))
+
 (defmacro with-gameboard ((game board row col) &body body)
-  (let ((size (gensym)))
-    `(let ((,size (gameboard-size game))
-           (,board (gameboard-board game)))
-       (dotimes (,row ,size)
-         (dotimes (,col ,size)
-           ,@body)))))
+  `(let ((,board (gameboard-board game)))
+     (dotimes (,row +board-size+)
+       (dotimes (,col +board-size+)
+         ,@body))))
 
 (defmacro with-board-pieces ((game board row col owner type) &body body)
   (let ((cell (gensym)))
     `(with-gameboard
        (,game ,board ,row ,col)
-       (let* ((,cell (aref ,board ,row ,col))
-              (,type (board-get-type ,cell)))
-         (when (plusp ,type)
-           (let ((,owner (board-get-flag +board-player+ ,cell)))
+       (let ((,cell (aref ,board ,row ,col)))
+         (when (plusp ,cell)
+           (let* ((,type (board-get-type ,cell))
+                  (,owner (board-get-flag +board-player+ ,cell)))
              ,@body))))))
 
 (defun cell-details (cell)
   (values (board-get-type cell)
           (board-get-flag +board-player+ cell)))
 
-; call this at the beginning of each turn, and before saving
 (defun clear-moved (game)
   (with-gameboard
     (game board row col)
@@ -113,8 +117,9 @@
 ; a gameboard in the starting position. the pieces are vertical as I was
 ; thinking of Archon (1983) when playtesting the game with some coins on
 ; a piece of ruled cardboard
-(defun new-gameboard (size)
-  (let ((board (make-array `(,size ,size) :element-type '(unsigned-byte 8)
+(defun new-gameboard ()
+  (let ((board (make-array `(,+board-size+ ,+board-size+)
+                           :element-type '(unsigned-byte 8)
                            :initial-contents '((0 0 0 0 0 0 0 0 0)
                                                (0 2 0 0 0 0 0 66 0)
                                                (0 1 0 0 0 0 0 65 0)
@@ -124,8 +129,7 @@
                                                (0 1 0 0 0 0 0 65 0)
                                                (0 2 0 0 0 0 0 66 0)
                                                (0 0 0 0 0 0 0 0 0)))))
-    (make-gameboard :size size
-                    :board board
+    (make-gameboard :board board
                     :moves (move-count)
                     :score (make-array 2 :element-type 'fixnum
                                        :initial-element 0))))
@@ -140,11 +144,11 @@
         (setf (gameboard-moves game) +no-moves+)
         (return-from next-turn))))
   ; in theory we need only clear the moved bit from the scoring cell,
-  ; and the whole board only before saving the game, but this keeps the
-  ; board clean
+  ; and only the whole board only before saving the game, but this keeps
+  ; the board clean
   (clear-moved game)
-  (let ((turn (incf (gameboard-turn game))))
-    (when (zerop (mod turn 2))
+  (let ((player (toggle (gameboard-player game))))
+    (when (zerop player)
       (setf (gameboard-moves game) (move-count))))
   t)
 
@@ -167,18 +171,14 @@
                       (if (plusp dy) 1 -1))
               (values +move-other+))))))))
 
-; NOTE "moves" of zero for a second player turn is an illegal state; the
-; move count must be shared between pairs of turns. but that's a
-; validation detail for an as-yet-to-be-written board loader
 (defun print-board (game &optional (stream t))
   (let ((score (gameboard-score game)))
-    (format stream "Marad 1 turn ~d moves ~d score ~d ~d~&"
-            (gameboard-turn game) (gameboard-moves game)
+    (format stream "Marad 1 player ~d moves ~d score ~d ~d~&"
+            (gameboard-player game) (gameboard-moves game)
             (aref score 0) (aref score 1)))
-  (let ((size (gameboard-size game))
-        (board (gameboard-board game)))
-    (dotimes (row size)
-      (dotimes (col size)
+  (let ((board (gameboard-board game)))
+    (dotimes (row +board-size+)
+      (dotimes (col +board-size+)
         (let* ((cell (aref board row col))
                (type (board-get-type cell))
                (player (board-get-flag +board-player+ cell))

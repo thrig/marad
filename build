@@ -9,6 +9,8 @@ eval 'exec sbcl --script "$0" ${1+"$@"}'
     (load quicklisp-init)))
 (ql:quickload :marad)
 
+(proclaim '(optimize speed))
+
 (in-package :marad)
 #+SBCL
 (sb-ext:save-lisp-and-die "marad" :executable t :toplevel '_start)
