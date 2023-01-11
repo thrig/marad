@@ -44,6 +44,7 @@
   (moves 0 :type move-count)
   (player 0 :type (unsigned-byte 1))
   (score nil :type (simple-array fixnum (2)))
+  (victor 0 :type (unsigned-byte 1))
   board)
 
 (defmacro board-set-type (type x) `(setf (ldb (byte 4 0) ,x) ,type))
@@ -138,11 +139,11 @@
   ; increase score for the player whose moved piece is in the middle
   (let ((cell (aref (gameboard-board game) +middle-cell+ +middle-cell+)))
     (when (plusp (ldb (byte 1 +board-moved+) cell))
-      (when (>= (incf (aref (gameboard-score game)
-                            (board-get-flag +board-player+ cell)))
-                +victory-points+)
-        (setf (gameboard-moves game) +no-moves+)
-        (return-from next-turn))))
+      (let ((player (board-get-flag +board-player+ cell)))
+        (when (>= (incf (aref (gameboard-score game) player)) +victory-points+)
+          (psetf (gameboard-moves game) +no-moves+
+                 (gameboard-victor game) player)
+          (return-from next-turn)))))
   ; in theory we need only clear the moved bit from the scoring cell,
   ; and only the whole board only before saving the game, but this keeps
   ; the board clean
